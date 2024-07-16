@@ -1,0 +1,50 @@
+name: Deploy Helm Chart to AKS
+
+on:
+  push:
+    branches:
+      -main
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Azure CLI
+        uses: azure/CLI@v1
+        with:
+          azlcliversion: 'latest'
+    
+      - name: Terraform Init
+        run: terraform init
+      
+      - name: Terraform Validate
+      
+        run: terraform validate
+      
+      - name: Terraform Plan
+      
+        run: terraform plan -input=false -out=tfplan
+      
+      - name: Terraform Apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'  
+        run: terraform apply -input=false tfplan
+        id: apply 
+
+      - name: Extract installed chart info
+        run: |
+          installed_charts=${{ steps.apply.outputs.installed_charts }}
+          echo "Installed charts: $installed_charts"
+      
+    
+      - name: Helm Version
+        run: helm version --short
+
+      - name: Helm Upgrade or Install
+        run: |
+          helm upgrade --install mychart ./path/to/chart \
+            --set key1=value1,key2=value2 \
+            --namespace default \
+            --kubeconfig ~/.kube/config
