@@ -3,7 +3,7 @@ name: Deploy Helm Chart to AKS
 on:
   push:
     branches:
-      -main
+      - main
 
 jobs:
   build_and_deploy:
@@ -12,10 +12,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
       - name: Set up Azure CLI
         uses: azure/CLI@v1
         with:
-          azlcliversion: 'latest'
+          azcliversion: 'latest'
     
       - name: Terraform Init
         run: terraform init
@@ -31,6 +36,7 @@ jobs:
       - name: Terraform Apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'  
         run: terraform apply -input=false tfplan
+        working-directory: ./terraform/modules/helm_charts
         id: apply 
 
       - name: Extract installed chart info
